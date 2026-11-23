@@ -1,0 +1,35 @@
+{
+  "name": "shui-api",
+  "version": "1.0.0",
+  "description": "Shui – REST API for a digital message board, built with AWS Lambda, API Gateway and DynamoDB",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linnea87/shui-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Linnea87/shui-api/issues"
+  },
+  "homepage": "https://github.com/Linnea87/shui-api#readme",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1175.0",
+    "@aws-sdk/lib-dynamodb": "^3.1175.0",
+    "@middy/core": "^7.9.2",
+    "@middy/http-json-body-parser": "^7.9.2",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "serverless": "^4.46.0"
+  },
+  "allowScripts": {
+    "serverless@4.46.0": true
+  }
+}
