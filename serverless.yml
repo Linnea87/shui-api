@@ -22,6 +22,12 @@ provider:
     COMMENTS_TABLE: ${self:service}-comments-${sls:stage}
 
 functions:
+  register:
+    handler: functions/auth/register/index.handler
+    events:
+      - httpApi:
+          path: /auth/register
+          method: post
 
 # ==================================================
 # Resources – DynamoDB tables
