@@ -25,6 +25,7 @@ provider:
 # Functions
 # ==================================================
 functions:
+  # Auth
   register:
     handler: functions/auth/register/index.handler
     events:
@@ -39,6 +40,13 @@ functions:
           path: /auth/login
           method: post
 
+  # Posts
+  createPost:
+    handler: functions/posts/createPost/index.handler
+    events:
+      - httpApi:
+          path: /posts
+          method: post
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================
