@@ -4,11 +4,14 @@
 
 import { z } from "zod";
 
-// Usernames are trimmed and lowercased, so "Jesper" and "jesper" cannot both be registered
-const username = z
+// Trimmed and lowercased, so login matches the stored username regardless of case
+const normalizedUsername = z
   .string({ error: "Username is required" })
   .trim()
-  .toLowerCase()
+  .toLowerCase();
+
+// Registration rules for new usernames
+const username = normalizedUsername
   .min(3, "Username must be at least 3 characters")
   .max(20, "Username must be at most 20 characters")
   .regex(
@@ -26,3 +29,11 @@ const password = z
   );
 
 export const registerSchema = z.object({ username, password });
+
+// Login only checks that the fields are present. The format rules belong to registration.
+export const loginSchema = z.object({
+  username: normalizedUsername.min(1, "Username is required"),
+  password: z
+    .string({ error: "Password is required" })
+    .min(1, "Password is required"),
+});

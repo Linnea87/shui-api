@@ -21,12 +21,22 @@ provider:
     POSTS_TABLE: ${self:service}-posts-${sls:stage}
     COMMENTS_TABLE: ${self:service}-comments-${sls:stage}
 
+# ==================================================
+# Functions
+# ==================================================
 functions:
   register:
     handler: functions/auth/register/index.handler
     events:
       - httpApi:
           path: /auth/register
+          method: post
+
+  login:
+    handler: functions/auth/login/index.handler
+    events:
+      - httpApi:
+          path: /auth/login
           method: post
 
 # ==================================================
