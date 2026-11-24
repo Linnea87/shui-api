@@ -17,3 +17,7 @@ export const signToken = (username) =>
     algorithm: ALGORITHM,
     expiresIn: EXPIRES_IN,
   });
+
+// Returns the payload of a valid token. Throws if the token is malformed, tampered, expired
+// or signed with any other algorithm than ALGORITHM.
+export const verifyToken = (token) => jwt.verify(token, SECRET, { algorithms: [ALGORITHM] });
