@@ -12,3 +12,6 @@ local.yml
 
 # OS files
 .DS_Store
+
+# Local end-to-end test script
+test.sh
