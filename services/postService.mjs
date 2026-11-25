@@ -70,3 +70,16 @@ export const updatePost = async (postId, { title, content }, user) => {
 
   return updated;
 };
+
+// Deletes the user's own post. Throws 404 if it does not exist and 403 if the user is not the owner.
+export const deletePost = async (postId, user) => {
+  const post = await getPost(postId);
+  assertOwner(post, user);
+
+  const deleted = await postRepository.deletePost(postId);
+
+  // The post was deleted by another request between the ownership check and the delete
+  if (!deleted) {
+    throw new NotFoundError("Post not found");
+  }
+};

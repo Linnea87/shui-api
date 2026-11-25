@@ -3,6 +3,7 @@
 // ==================================================
 
 import {
+  DeleteCommand,
   GetCommand,
   PutCommand,
   UpdateCommand,
@@ -116,6 +117,25 @@ export const updatePost = async (id, { title, content, updatedAt }) => {
   } catch (error) {
     if (error.name === "ConditionalCheckFailedException") {
       return null;
+    }
+    throw error;
+  }
+};
+
+// Deletes a post. Returns false if it was already gone, so the caller can answer 404.
+export const deletePost = async (id) => {
+  try {
+    await db.send(
+      new DeleteCommand({
+        TableName: TABLE_NAME,
+        Key: { id },
+        ConditionExpression: "attribute_exists(id)",
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      return false;
     }
     throw error;
   }

@@ -69,6 +69,13 @@ functions:
           path: /posts/{postId}
           method: put
 
+  deletePost:
+    handler: functions/posts/deletePost/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}
+          method: delete
+
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================
