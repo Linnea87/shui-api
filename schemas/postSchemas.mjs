@@ -2,6 +2,7 @@
 // Post schemas
 // ==================================================
 
+import { normalizedUsername } from "./authSchemas.mjs";
 import { z } from "zod";
 
 // Trimmed first, so a title of only spaces counts as missing
@@ -18,3 +19,19 @@ const content = z
   .max(1000, "Content must be at most 1000 characters");
 
 export const createPostSchema = z.object({ title, content });
+
+// Only username is allowed. Unknown parameters return 400, so a typo like ?user=jesper
+// fails clearly instead of silently returning all posts.
+export const getPostsQuerySchema = z.strictObject(
+  {
+    username: normalizedUsername
+      .min(1, "Username must not be empty")
+      .optional(),
+  },
+  {
+    error: (issue) =>
+      issue.code === "unrecognized_keys"
+        ? `Unknown query parameter: ${issue.keys.join(", ")}`
+        : undefined,
+  },
+);

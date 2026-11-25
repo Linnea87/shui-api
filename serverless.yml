@@ -47,6 +47,14 @@ functions:
       - httpApi:
           path: /posts
           method: post
+
+  getPosts:
+    handler: functions/posts/getPosts/index.handler
+    events:
+      - httpApi:
+          path: /posts
+          method: get
+
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================

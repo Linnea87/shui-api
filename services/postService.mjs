@@ -20,3 +20,9 @@ export const createPost = async ({ title, content }, user) => {
     updatedAt: now,
   });
 };
+
+// All posts, or only one user's posts when username is given. Both come newest first from the repository.
+export const getPosts = ({ username } = {}) =>
+  username
+    ? postRepository.getPostsByUsername(username)
+    : postRepository.getAllPosts();
