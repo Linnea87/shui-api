@@ -2,7 +2,12 @@
 // Post repository
 // ==================================================
 
-import { GetCommand, PutCommand, paginateQuery } from "@aws-sdk/lib-dynamodb";
+import {
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  paginateQuery,
+} from "@aws-sdk/lib-dynamodb";
 import { db } from "./db.mjs";
 
 const TABLE_NAME = process.env.POSTS_TABLE;
@@ -84,4 +89,34 @@ export const getPostById = async (id) => {
   );
 
   return Item ? toPost(Item) : null;
+};
+
+// Changes only title, content and updatedAt, so id, username, createdAt and isGuest can never be overwritten.
+// Returns the updated post, or null if it no longer exists. Without the condition, an update on
+// a missing id would create a new, incomplete item.
+export const updatePost = async (id, { title, content, updatedAt }) => {
+  try {
+    const { Attributes } = await db.send(
+      new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: { id },
+        UpdateExpression:
+          "SET title = :title, content = :content, updatedAt = :updatedAt",
+        ConditionExpression: "attribute_exists(id)",
+        ExpressionAttributeValues: {
+          ":title": title,
+          ":content": content,
+          ":updatedAt": updatedAt,
+        },
+        ReturnValues: "ALL_NEW",
+      }),
+    );
+
+    return toPost(Attributes);
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      return null;
+    }
+    throw error;
+  }
 };
