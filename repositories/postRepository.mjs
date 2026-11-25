@@ -2,7 +2,7 @@
 // Post repository
 // ==================================================
 
-import { PutCommand, paginateQuery } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, paginateQuery } from "@aws-sdk/lib-dynamodb";
 import { db } from "./db.mjs";
 
 const TABLE_NAME = process.env.POSTS_TABLE;
@@ -76,3 +76,12 @@ export const getPostsByUsername = (username) =>
     ExpressionAttributeValues: { ":username": username },
     ScanIndexForward: false,
   });
+
+// One post by id, or null if it does not exist
+export const getPostById = async (id) => {
+  const { Item } = await db.send(
+    new GetCommand({ TableName: TABLE_NAME, Key: { id } }),
+  );
+
+  return Item ? toPost(Item) : null;
+};
