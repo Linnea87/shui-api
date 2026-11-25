@@ -5,7 +5,7 @@
 import { z } from "zod";
 
 // Trimmed and lowercased, so login matches the stored username regardless of case
-const normalizedUsername = z
+export const normalizedUsername = z
   .string({ error: "Username is required" })
   .trim()
   .toLowerCase();
