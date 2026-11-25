@@ -35,3 +35,6 @@ export const getPostsQuerySchema = z.strictObject(
         : undefined,
   },
 );
+
+// PUT replaces both fields, so both are required, with the same rules as when the post was created
+export const updatePostSchema = z.object({ title, content });
