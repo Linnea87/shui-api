@@ -1,15 +1,16 @@
 // ==================================================
-// POST /posts – logged-in users
+// POST /posts – logged-in users and guests
 // ==================================================
 
 import middy from "@middy/core";
+import { optionalAuth } from "../../../middlewares/optionalAuth.mjs";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
 import { errorHandler } from "../../../middlewares/errorHandler.mjs";
-import { requireAuth } from "../../../middlewares/requireAuth.mjs";
 import { validate } from "../../../middlewares/validate.mjs";
 import { createPostSchema } from "../../../schemas/postSchemas.mjs";
 import { createPost } from "../../../services/postService.mjs";
 import { sendResponse } from "../../../utils/response.mjs";
+
 
 const createPostHandler = async (event) => {
   const post = await createPost(event.body, event.user);
@@ -18,7 +19,7 @@ const createPostHandler = async (event) => {
 };
 
 export const handler = middy(createPostHandler)
-  .use(requireAuth())
+  .use(optionalAuth())
   .use(httpJsonBodyParser())
   .use(validate({ body: createPostSchema }))
   .use(errorHandler());
