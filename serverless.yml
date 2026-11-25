@@ -62,6 +62,13 @@ functions:
           path: /posts/{postId}
           method: get
 
+  updatePost:
+    handler: functions/posts/updatePost/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}
+          method: put
+
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================
