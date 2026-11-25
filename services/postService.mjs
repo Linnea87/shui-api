@@ -12,7 +12,12 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 // The one ownership rule, shared by update and delete. Throws 403 if the user does not own the post.
+// Guest posts have no owner: a registered user with the same name as a guest must not take them over.
 const assertOwner = (post, user) => {
+  if (post.isGuest) {
+    throw new ForbiddenError("Guest posts cannot be changed");
+  }
+
   if (post.username !== user.username) {
     throw new ForbiddenError("You can only change your own posts");
   }
