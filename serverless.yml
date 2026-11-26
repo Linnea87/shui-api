@@ -84,6 +84,13 @@ functions:
           path: /posts/{postId}/comments
           method: post
 
+  getComments:
+    handler: functions/comments/getComments/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}/comments
+          method: get
+
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================

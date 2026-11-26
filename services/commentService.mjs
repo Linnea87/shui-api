@@ -27,3 +27,11 @@ export const createComment = async (postId, { content }, user) => {
 
   return comment;
 };
+
+// All comments on an existing post, normal or guest, oldest first. Throws 404 if the post does not exist,
+// so an unknown post is never confused with a post that has no comments.
+export const getComments = async (postId) => {
+  await getPost(postId);
+
+  return commentRepository.getCommentsByPostId(postId);
+};
