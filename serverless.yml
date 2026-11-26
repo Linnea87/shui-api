@@ -76,6 +76,14 @@ functions:
           path: /posts/{postId}
           method: delete
 
+  # Comments
+  createComment:
+    handler: functions/comments/createComment/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}/comments
+          method: post
+
 # ==================================================
 # Resources – DynamoDB tables
 # ==================================================
