@@ -7,8 +7,8 @@ import {
   GetCommand,
   PutCommand,
   UpdateCommand,
-  paginateQuery,
 } from "@aws-sdk/lib-dynamodb";
+import { queryAll } from "./queryAll.mjs";
 import { db } from "./db.mjs";
 
 const TABLE_NAME = process.env.POSTS_TABLE;
@@ -36,21 +36,6 @@ const toPost = ({
   updatedAt,
 });
 
-// DynamoDB returns at most 1 MB per Query. The paginator follows LastEvaluatedKey
-// until every page is read, so no posts are silently left out.
-const queryAll = async (params) => {
-  const posts = [];
-
-  for await (const page of paginateQuery(
-    { client: db },
-    { TableName: TABLE_NAME, ...params },
-  )) {
-    posts.push(...page.Items.map(toPost));
-  }
-
-  return posts;
-};
-
 // Stores a new post. The condition makes sure an existing post is never silently overwritten.
 export const createPost = async (post) => {
   await db.send(
@@ -65,8 +50,9 @@ export const createPost = async (post) => {
 };
 
 // All posts, newest first
-export const getAllPosts = () =>
-  queryAll({
+export const getAllPosts = async () => {
+  const items = await queryAll({
+    TableName: TABLE_NAME,
     IndexName: "CreatedAtIndex",
     KeyConditionExpression: "#type = :type",
     ExpressionAttributeNames: { "#type": "type" },
@@ -74,14 +60,21 @@ export const getAllPosts = () =>
     ScanIndexForward: false,
   });
 
+  return items.map(toPost);
+};
+
 // Posts by one username, newest first. Includes guest posts, since they store their generated name in the same field.
-export const getPostsByUsername = (username) =>
-  queryAll({
+export const getPostsByUsername = async (username) => {
+  const items = await queryAll({
+    TableName: TABLE_NAME,
     IndexName: "UsernameIndex",
     KeyConditionExpression: "username = :username",
     ExpressionAttributeValues: { ":username": username },
     ScanIndexForward: false,
   });
+
+  return items.map(toPost);
+};
 
 // One post by id, or null if it does not exist
 export const getPostById = async (id) => {
