@@ -4,6 +4,7 @@
 
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "./db.mjs";
+import { queryAll } from "./queryAll.mjs";
 
 const TABLE_NAME = process.env.COMMENTS_TABLE;
 const POSTS_TABLE_NAME = process.env.POSTS_TABLE;
@@ -56,4 +57,17 @@ export const createComment = async (comment) => {
     }
     throw error;
   }
+};
+
+// All comments on one post, oldest first. Every comment shares the postId partition,
+// and the sort key starts with createdAt, so one Query returns them in order.
+export const getCommentsByPostId = async (postId) => {
+  const items = await queryAll({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: "postId = :postId",
+    ExpressionAttributeValues: { ":postId": postId },
+    ScanIndexForward: true,
+  });
+
+  return items.map(toComment);
 };
