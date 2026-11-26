@@ -4,6 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 import * as postRepository from "../repositories/postRepository.mjs";
+import * as commentRepository from "../repositories/commentRepository.mjs";
 import { ForbiddenError, NotFoundError } from "../utils/errors.mjs";
 import { generateGuestUsername } from "../utils/guestUsername.mjs";
 
@@ -77,7 +78,9 @@ export const updatePost = async (postId, { title, content }, user) => {
   return updated;
 };
 
-// Deletes the user's own post. Throws 404 if it does not exist and 403 if the user is not the owner.
+// Deletes the user's own post and all of its comments. Throws 404 if it does not exist and 403 if the user is not the owner.
+// The post is deleted first: from that moment createComment's transaction rejects new comments,
+// so deleting the comments afterwards is guaranteed to catch every one of them.
 export const deletePost = async (postId, user) => {
   const post = await getPost(postId);
   assertOwner(post, user);
@@ -88,4 +91,6 @@ export const deletePost = async (postId, user) => {
   if (!deleted) {
     throw new NotFoundError("Post not found");
   }
+
+  await commentRepository.deleteCommentsByPostId(postId);
 };
