@@ -2,12 +2,20 @@
 // Comment repository
 // ==================================================
 
-import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { BatchWriteCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "./db.mjs";
 import { queryAll } from "./queryAll.mjs";
 
 const TABLE_NAME = process.env.COMMENTS_TABLE;
 const POSTS_TABLE_NAME = process.env.POSTS_TABLE;
+
+// BatchWriteItem accepts at most 25 requests per call
+const BATCH_SIZE = 25;
+
+// Throttled deletes come back as UnprocessedItems. They are retried with growing waits, then reported as an error.
+const MAX_ATTEMPTS = 5;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Sort key: createdAt first so comments sort oldest first, id last so two comments
 // in the same millisecond can never get the same key and overwrite each other
@@ -70,4 +78,40 @@ export const getCommentsByPostId = async (postId) => {
   });
 
   return items.map(toComment);
+};
+
+// Deletes every comment on a post and returns how many were deleted.
+// Only the keys are read, then they are deleted in batches of 25. Nothing is silently left behind:
+// unprocessed deletes are retried, and if they still fail the error is thrown.
+export const deleteCommentsByPostId = async (postId) => {
+  const keys = await queryAll({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: "postId = :postId",
+    ExpressionAttributeValues: { ":postId": postId },
+    ProjectionExpression: "postId, createdAtId",
+  });
+
+  for (let start = 0; start < keys.length; start += BATCH_SIZE) {
+    let requests = keys
+      .slice(start, start + BATCH_SIZE)
+      .map((Key) => ({ DeleteRequest: { Key } }));
+
+    for (let attempt = 1; requests.length > 0; attempt++) {
+      if (attempt > MAX_ATTEMPTS) {
+        throw new Error(`Could not delete all comments for post ${postId}`);
+      }
+
+      const { UnprocessedItems } = await db.send(
+        new BatchWriteCommand({ RequestItems: { [TABLE_NAME]: requests } }),
+      );
+
+      requests = UnprocessedItems?.[TABLE_NAME] ?? [];
+
+      if (requests.length > 0) {
+        await wait(50 * 2 ** attempt);
+      }
+    }
+  }
+
+  return keys.length;
 };
