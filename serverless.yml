@@ -1,0 +1,160 @@
+# ==================================================
+# Service
+# ==================================================
+org: ${file(./local.yml):org}
+service: shui-api
+
+# ==================================================
+# Provider
+# ==================================================
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: eu-north-1
+
+  iam:
+    role: ${file(./local.yml):role}
+
+  environment:
+    JWT_SECRET: ${file(./local.yml):jwtSecret}
+    USERS_TABLE: ${self:service}-users-${sls:stage}
+    POSTS_TABLE: ${self:service}-posts-${sls:stage}
+    COMMENTS_TABLE: ${self:service}-comments-${sls:stage}
+
+# ==================================================
+# Functions
+# ==================================================
+functions:
+  # Auth
+  register:
+    handler: functions/auth/register/index.handler
+    events:
+      - httpApi:
+          path: /auth/register
+          method: post
+
+  login:
+    handler: functions/auth/login/index.handler
+    events:
+      - httpApi:
+          path: /auth/login
+          method: post
+
+  # Posts
+  createPost:
+    handler: functions/posts/createPost/index.handler
+    events:
+      - httpApi:
+          path: /posts
+          method: post
+
+  getPosts:
+    handler: functions/posts/getPosts/index.handler
+    events:
+      - httpApi:
+          path: /posts
+          method: get
+
+  getPost:
+    handler: functions/posts/getPost/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}
+          method: get
+
+  updatePost:
+    handler: functions/posts/updatePost/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}
+          method: put
+
+  deletePost:
+    handler: functions/posts/deletePost/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}
+          method: delete
+
+  # Comments
+  createComment:
+    handler: functions/comments/createComment/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}/comments
+          method: post
+
+  getComments:
+    handler: functions/comments/getComments/index.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}/comments
+          method: get
+
+# ==================================================
+# Resources – DynamoDB tables
+# ==================================================
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+
+    PostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.POSTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: username
+            AttributeType: S
+          - AttributeName: type
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UsernameIndex
+            KeySchema:
+              - AttributeName: username
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: CreatedAtIndex
+            KeySchema:
+              - AttributeName: type
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    CommentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.COMMENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: postId
+            AttributeType: S
+          - AttributeName: createdAtId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: postId
+            KeyType: HASH
+          - AttributeName: createdAtId
+            KeyType: RANGE
