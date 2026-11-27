@@ -237,6 +237,7 @@ shui-api/
 │   ├── errorHandler.mjs
 │   ├── optionalAuth.mjs
 │   ├── requireAuth.mjs
+│   ├── requirePostOwner.mjs
 │   └── validate.mjs
 ├── repositories/                  # All DynamoDB access
 │   ├── commentRepository.mjs
@@ -273,26 +274,27 @@ Request → middlewares → handler → service → repository → DynamoDB
 
 | Layer | Folder | Responsibility |
 | --- | --- | --- |
-| Middleware | `middlewares/` | Authentication, body parsing, validation and error handling, shared by all handlers |
+| Middleware | `middlewares/` | Authentication, authorization, body parsing, validation and error handling, shared by all handlers |
 | Handler | `functions/` | Reads the request and returns the response. No business logic |
-| Service | `services/` | The rules of the API, such as ownership checks, guest posts and that a post must exist |
+| Service | `services/` | The rules of the API, such as guest posts, generated ids and timestamps, and that a post must exist |
 | Repository | `repositories/` | Reads and writes DynamoDB. The only layer that knows about tables and keys |
 
 Schemas in `schemas/` describe what a valid request looks like, and are used by the `validate` middleware. Helpers in `utils/` are shared by all layers.
 
-A handler is therefore only a few lines. This is the whole handler for `POST /posts`:
+A handler is therefore only a few lines. This is the whole handler for `PUT /posts/{postId}`, where authentication, validation and authorization are all handled by middlewares:
 
 ```js
-const createPostHandler = async (event) => {
-  const post = await createPost(event.body, event.user);
+const updatePostHandler = async (event) => {
+  const post = await updatePost(event.pathParameters.postId, event.body);
 
-  return sendResponse(201, { message: "Post created successfully", post });
+  return sendResponse(200, { message: "Post updated successfully", post });
 };
 
-export const handler = middy(createPostHandler)
-  .use(optionalAuth())
+export const handler = middy(updatePostHandler)
+  .use(requireAuth())
   .use(httpJsonBodyParser())
-  .use(validate({ body: createPostSchema }))
+  .use(validate({ body: updatePostSchema }))
+  .use(requirePostOwner())
   .use(errorHandler());
 ```
 
@@ -364,6 +366,7 @@ Every read uses a key or an index. No request scans a whole table.
 - **Passwords are hashed with bcrypt.** Only the hash is stored. Passwords longer than 72 bytes are rejected, because bcrypt silently ignores everything after 72 bytes.
 - **Login does not reveal which usernames exist.** A wrong username and a wrong password return the same message, and bcrypt runs even when the user does not exist, so both cases take about the same time.
 - **An invalid token is never treated as a guest.** `POST /posts` without a token creates a guest post, but a broken or expired token returns `401`. Otherwise a client with an expired session would post as a guest without noticing.
+- **Authorization is a reusable middleware.** `requirePostOwner` loads the post, checks that the logged-in user owns it and makes it available to the handler. Update and delete use the same middleware, so the ownership rule is written once.
 - **Guest posts cannot be taken over.** The ownership check looks at `isGuest` before it compares usernames, so a user who registers the same name as a guest still cannot change the guest's posts.
 - **Responses only contain allowed fields.** The repositories map every item to a fixed list of fields, so internal fields like `type`, `createdAtId` and `passwordHash` never reach the client.
 
@@ -380,7 +383,7 @@ Every read uses a key or an index. No request scans a whole table.
 
 ### Errors and validation
 
-- **Errors are checked in a fixed order.** The middlewares run in the order authentication, body parsing and validation, and the service then checks that the post exists before it checks ownership. The result is always `401`, then `400`, then `404`, then `403`.
+- **Errors are checked in a fixed order.** The middlewares run in the order authentication, body parsing, validation and authorization, and the authorization middleware checks that the post exists before it checks ownership. The result is always `401`, then `400`, then `404`, then `403`.
 - **Unknown query parameters are rejected.** A typo like `?user=jesper` returns `400` instead of silently returning all posts.
 - **Unexpected errors never leak details.** The error handler returns a generic `500` and logs the full error with the request id in CloudWatch. Errors from the JSON body parser are mapped to `400`, since the API spec uses `400` for all bad input.
 
