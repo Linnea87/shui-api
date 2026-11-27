@@ -11,6 +11,7 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: eu-north-1
+  stage: ${opt:stage, 'dev'}
 
   iam:
     role: ${file(./local.yml):role}
