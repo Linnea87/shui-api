@@ -4,7 +4,7 @@ Shui is a REST API for a digital message board. Users can register, log in and w
 
 The API is serverless: every endpoint is its own AWS Lambda function behind API Gateway, and all data is stored in DynamoDB.
 
-**Deployed API:** _added after the production deploy_
+**Base URL:** https://ixunky6lg0.execute-api.eu-north-1.amazonaws.com
 
 ## Table of contents
 
